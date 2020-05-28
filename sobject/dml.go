@@ -278,7 +278,7 @@ func (d *dml) upsertResponse(request *http.Request) (UpsertValue, error) {
 		errMsg := fmt.Errorf("upsert response err: %d %s", response.StatusCode, response.Status)
 		if err == nil {
 			for _, updateErr := range upsetErrs {
-				// TODO: why errMsg is overwritten in the loop?
+				// TODO(vtopc): why errMsg is overwritten in the loop?
 				errMsg = fmt.Errorf("upsert response err: %s: %s", updateErr.ErrorCode, updateErr.Message)
 			}
 		}
