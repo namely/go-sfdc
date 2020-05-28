@@ -40,7 +40,7 @@ func TestPasswordSessionRequest(t *testing.T) {
 				ClientID:     "some client id",
 				ClientSecret: "shhhh its a secret",
 			},
-			err: errors.New("parse 123://something.com/services/oauth2/token: first path segment in URL cannot contain colon"),
+			err: errors.New(`parse "123://something.com/services/oauth2/token": first path segment in URL cannot contain colon`),
 		},
 	}
 
