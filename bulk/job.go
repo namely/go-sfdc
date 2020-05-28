@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	sfdc "github.com/namely/go-sfdc"
+	"github.com/namely/go-sfdc"
 	"github.com/namely/go-sfdc/session"
 )
 

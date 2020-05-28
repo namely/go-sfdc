@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	sfdc "github.com/namely/go-sfdc"
+	"github.com/namely/go-sfdc"
 	"github.com/namely/go-sfdc/session"
 )
 
