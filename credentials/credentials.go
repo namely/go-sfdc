@@ -68,7 +68,7 @@ func NewCredentials(provider Provider) (*Credentials, error) {
 	}, nil
 }
 
-// NewPasswordCredentials will create a crendential with the password credentials.
+// NewPasswordCredentials will create a credential with the password credentials.
 func NewPasswordCredentials(creds PasswordCredentials) (*Credentials, error) {
 	if err := validatePasswordCredentials(creds); err != nil {
 		return nil, err

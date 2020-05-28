@@ -5,7 +5,7 @@ This is a `golang` library for interfacing with `Salesforce` APIs.
 ### Installing
 To start using GO-SFDC, install GO and run `go get`
 ```
-go get -u github.com/g8rswimmer/go-sfdc
+go get -u github.com/namely/go-sfdc
 ```
 This will retrieve the library.
 
@@ -30,7 +30,14 @@ The configuration defines several parameters that can be used by the library.  T
 * `Version` - is the `Salesforce` version.  Please refer to [`Salesforce` documentation](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/intro_what_is_rest_api.htm) to make sure that `APIs` are supported in the version that is specified.
 ### Example
 ```go
-config := sfdc.Configuration{
+package main
+
+import (
+	"github.com/namely/go-sfdc"
+	"github.com/namely/go-sfdc/credentials"
+)
+
+var config = sfdc.Configuration{
 	Credentials: credentials.NewPasswordCredentials(creds),
 	Client:      salesforceHTTPClient,
 	Version:     44,

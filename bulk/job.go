@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	sfdc "github.com/g8rswimmer/go-sfdc"
-	"github.com/g8rswimmer/go-sfdc/session"
+	sfdc "github.com/namely/go-sfdc"
+	"github.com/namely/go-sfdc/session"
 )
 
 // JobType is the bulk job type.
