@@ -9,7 +9,6 @@ import (
 	"regexp"
 
 	"github.com/namely/go-sfdc"
-
 	"github.com/namely/go-sfdc/session"
 )
 

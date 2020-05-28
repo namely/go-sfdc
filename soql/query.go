@@ -8,7 +8,6 @@ import (
 	"net/url"
 
 	"github.com/namely/go-sfdc"
-
 	"github.com/namely/go-sfdc/session"
 )
 

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/namely/go-sfdc"
-
 	"github.com/namely/go-sfdc/session"
 )
 
