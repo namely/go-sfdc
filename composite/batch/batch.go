@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/namely/go-sfdc"
-	"github.com/namely/go-sfdc/session"
+	"github.com/namely/go-sfdc/v3"
+	"github.com/namely/go-sfdc/v3/session"
 )
 
 // Subrequester provides the composite batch API requests.

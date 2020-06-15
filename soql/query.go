@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/namely/go-sfdc"
-	"github.com/namely/go-sfdc/session"
+	"github.com/namely/go-sfdc/v3"
+	"github.com/namely/go-sfdc/v3/session"
 )
 
 // Resource is the structure for the Salesforce

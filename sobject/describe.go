@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/namely/go-sfdc"
-	"github.com/namely/go-sfdc/session"
+	"github.com/namely/go-sfdc/v3"
+	"github.com/namely/go-sfdc/v3/session"
 )
 
 // DescribeValue is a structure that is returned from the from the Salesforce

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/namely/go-sfdc"
-	"github.com/namely/go-sfdc/credentials"
+	"github.com/namely/go-sfdc/v3"
+	"github.com/namely/go-sfdc/v3/credentials"
 )
 
 func TestPasswordSessionRequest(t *testing.T) {

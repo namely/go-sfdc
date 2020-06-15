@@ -33,8 +33,8 @@ The configuration defines several parameters that can be used by the library.  T
 package main
 
 import (
-	"github.com/namely/go-sfdc"
-	"github.com/namely/go-sfdc/credentials"
+	"github.com/namely/go-sfdc/v3"
+	"github.com/namely/go-sfdc/v3/credentials"
 )
 
 var config = sfdc.Configuration{
