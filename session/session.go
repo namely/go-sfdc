@@ -3,21 +3,26 @@ package session
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/credentials"
+	"github.com/pkg/errors"
 )
 
 // Session is the authentication response.  This is used to generate the
 // authorization header for the Salesforce API calls.
 type Session struct {
-	response   *sessionPasswordResponse
-	responseMu sync.RWMutex // response guardian
-	config     sfdc.Configuration
+	// tread safe:
+	config sfdc.Configuration
+
+	// thread unsafe:
+	mu        sync.RWMutex
+	response  *sessionPasswordResponse
+	expiresAt time.Time
 }
 
 // Clienter interface provides the HTTP client used by the
@@ -37,6 +42,7 @@ type Clienter interface {
 type InstanceFormatter interface {
 	InstanceURL() string
 	AuthorizationHeader(*http.Request)
+	Refresh() error
 	Clienter
 }
 
@@ -59,7 +65,10 @@ type sessionPasswordResponse struct {
 	Signature   string `json:"signature"`
 }
 
-const oauthEndpoint = "/services/oauth2/token"
+const (
+	oauthEndpoint          = "/services/oauth2/token"
+	defaultSessionDuration = 24 * time.Hour
+)
 
 // Open is used to authenticate with Salesforce and open a session.  The user will need to
 // supply the proper credentials and a HTTP client.
@@ -73,20 +82,17 @@ func Open(config sfdc.Configuration) (*Session, error) {
 	if config.Version <= 0 {
 		return nil, errors.New("session: configuration version can not be less than zero")
 	}
-	request, err := passwordSessionRequest(config.Credentials)
-
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := passwordSessionResponse(request, config.Client)
-	if err != nil {
-		return nil, err
+	if config.SessionDuration == 0 {
+		config.SessionDuration = defaultSessionDuration
 	}
 
 	session := &Session{
-		response: response,
-		config:   config,
+		config: config,
+	}
+
+	err := session.refresh()
+	if err != nil {
+		return nil, err
 	}
 
 	return session, nil
@@ -120,7 +126,7 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 		return nil, fmt.Errorf("session response error: %d %s", response.StatusCode, response.Status)
 	}
 	decoder := json.NewDecoder(response.Body)
-	// TODO: call before status check:
+	// TODO(vtopc): call before status check:
 	defer response.Body.Close()
 
 	var sessionResponse sessionPasswordResponse
@@ -135,8 +141,8 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 // InstanceURL will return the Salesforce instance
 // from the session authentication.
 func (s *Session) InstanceURL() string {
-	s.responseMu.RLock()
-	defer s.responseMu.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return s.response.InstanceURL
 }
@@ -144,8 +150,8 @@ func (s *Session) InstanceURL() string {
 // ServiceURL will return the Salesforce instance for the
 // service URL.
 func (s *Session) ServiceURL() string {
-	s.responseMu.RLock()
-	defer s.responseMu.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	return fmt.Sprintf("%s/services/data/v%d.0", s.response.InstanceURL, s.config.Version)
 }
@@ -153,10 +159,11 @@ func (s *Session) ServiceURL() string {
 // AuthorizationHeader will add the authorization to the
 // HTTP request's header.
 func (s *Session) AuthorizationHeader(req *http.Request) {
-	s.responseMu.RLock()
-	defer s.responseMu.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	s.authorizationHeader(req)
+	auth := s.response.TokenType + " " + s.response.AccessToken
+	req.Header.Add("Authorization", auth)
 }
 
 // Client returns the HTTP client to be used in APIs calls.
@@ -164,7 +171,39 @@ func (s *Session) Client() *http.Client {
 	return s.config.Client
 }
 
-func (s *Session) authorizationHeader(req *http.Request) {
-	auth := s.response.TokenType + " " + s.response.AccessToken
-	req.Header.Add("Authorization", auth)
+// Refresh check if session is expired and refresh it if needed.
+func (s *Session) Refresh() error {
+	if s.isExpired() {
+		return s.refresh()
+	}
+
+	return nil
+}
+
+func (s *Session) isExpired() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.expiresAt.Before(time.Now().UTC())
+}
+
+// refresh the session
+func (s *Session) refresh() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	req, err := passwordSessionRequest(s.config.Credentials)
+	if err != nil {
+		return err
+	}
+
+	resp, err := passwordSessionResponse(req, s.config.Client)
+	if err != nil {
+		return err
+	}
+
+	s.response = resp
+	s.expiresAt = time.Now().Add(s.config.SessionDuration).UTC()
+
+	return nil
 }

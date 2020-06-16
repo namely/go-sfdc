@@ -2,6 +2,7 @@ package sfdc
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/namely/go-sfdc/v3/credentials"
 )
@@ -14,7 +15,8 @@ import (
 //
 // Version is the Salesforce version for the APIs.
 type Configuration struct {
-	Credentials *credentials.Credentials
-	Client      *http.Client
-	Version     int
+	Credentials     *credentials.Credentials
+	Client          *http.Client
+	Version         int
+	SessionDuration time.Duration
 }

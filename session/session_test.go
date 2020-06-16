@@ -8,9 +8,11 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/credentials"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPasswordSessionRequest(t *testing.T) {
@@ -516,6 +518,34 @@ func TestSession_InstanceURL(t *testing.T) {
 			if got := session.InstanceURL(); got != tt.want {
 				t.Errorf("Session.InstanceURL() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestSession_isExpired(t *testing.T) {
+	tests := map[string]struct {
+		expiresAt time.Time
+		want      bool
+	}{
+		"expired": {
+			expiresAt: time.Now().Add(-1 * time.Hour).UTC(),
+			want:      true,
+		},
+		"not_expired": {
+			expiresAt: time.Now().Add(1 * time.Hour).UTC(),
+			want:      false,
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			s := &Session{
+				expiresAt: tt.expiresAt,
+			}
+
+			got := s.isExpired()
+
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }
