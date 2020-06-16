@@ -13,6 +13,7 @@ import (
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/credentials"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_passwordSessionRequest(t *testing.T) {
@@ -218,9 +219,10 @@ func Test_passwordSessionResponse(t *testing.T) {
 	}
 }
 
-func testNewPasswordCredentials(cred credentials.PasswordCredentials) *credentials.Credentials {
+func testNewPasswordCredentials(t *testing.T, cred credentials.PasswordCredentials) *credentials.Credentials {
 	creds, err := credentials.NewPasswordCredentials(cred)
 	if err != nil {
+		t.Error(err)
 		return nil
 	}
 	return creds
@@ -236,7 +238,7 @@ func TestNewPasswordSession(t *testing.T) {
 		{
 			desc: "Passing",
 			config: sfdc.Configuration{
-				Credentials: testNewPasswordCredentials(credentials.PasswordCredentials{
+				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "http://test.password.session",
 					Username:     "myusername",
 					Password:     "12345",
@@ -278,7 +280,7 @@ func TestNewPasswordSession(t *testing.T) {
 		{
 			desc: "Error Request",
 			config: sfdc.Configuration{
-				Credentials: testNewPasswordCredentials(credentials.PasswordCredentials{
+				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "123://test.password.session",
 					Username:     "myusername",
 					Password:     "12345",
@@ -299,7 +301,7 @@ func TestNewPasswordSession(t *testing.T) {
 		{
 			desc: "Error Response",
 			config: sfdc.Configuration{
-				Credentials: testNewPasswordCredentials(credentials.PasswordCredentials{
+				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "http://test.password.session",
 					Username:     "myusername",
 					Password:     "12345",
@@ -307,7 +309,6 @@ func TestNewPasswordSession(t *testing.T) {
 					ClientSecret: "shhhh its a secret",
 				}),
 				Client: mockHTTPClient(func(req *http.Request) *http.Response {
-
 					return &http.Response{
 						StatusCode: http.StatusInternalServerError,
 						Status:     "Some status",
@@ -544,4 +545,56 @@ func TestSession_isExpired(t *testing.T) {
 			assert.Equal(t, got, tt.want)
 		})
 	}
+}
+
+func TestSession_Refresh(t *testing.T) {
+	const (
+		oldToken = "oLd:ToKeN"
+		newToken = "nEw:ToKeN"
+	)
+
+	creds := testNewPasswordCredentials(t, credentials.PasswordCredentials{
+		URL:          "http://test.password.session",
+		Username:     "myusername",
+		Password:     "12345",
+		ClientID:     "some client id",
+		ClientSecret: "shhhh its a secret",
+	})
+	client := mockHTTPClient(func(req *http.Request) *http.Response {
+		resp := `{"access_token":"nEw:ToKeN"}`
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(strings.NewReader(resp)),
+		}
+	})
+	config := sfdc.Configuration{
+		SessionDuration: defaultSessionDuration,
+		Client:          client,
+		Credentials:     creds,
+	}
+	response := &sessionPasswordResponse{AccessToken: oldToken}
+
+	t.Run("expired", func(t *testing.T) {
+		s := &Session{
+			response:  response,
+			expiresAt: time.Now().Add(-2 * defaultSessionDuration).UTC(),
+			config:    config,
+		}
+
+		err := s.Refresh()
+		require.NoError(t, err)
+		assert.Equal(t, newToken, s.response.AccessToken)
+	})
+
+	t.Run("not_expired", func(t *testing.T) {
+		s := &Session{
+			response:  response,
+			expiresAt: time.Now().Add(2 * defaultSessionDuration).UTC(),
+			config:    config,
+		}
+
+		err := s.Refresh()
+		require.NoError(t, err)
+		assert.Equal(t, oldToken, s.response.AccessToken)
+	})
 }

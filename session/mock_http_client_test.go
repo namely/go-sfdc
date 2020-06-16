@@ -10,6 +10,6 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func mockHTTPClient(fn roundTripFunc) *http.Client {
 	return &http.Client{
-		Transport: roundTripFunc(fn),
+		Transport: fn,
 	}
 }
