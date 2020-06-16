@@ -146,11 +146,15 @@ func (session *Session) ServiceURL() string {
 // AuthorizationHeader will add the authorization to the
 // HTTP request's header.
 func (session *Session) AuthorizationHeader(request *http.Request) {
-	auth := fmt.Sprintf("%s %s", session.response.TokenType, session.response.AccessToken)
-	request.Header.Add("Authorization", auth)
+	session.authorizationHeader(request)
 }
 
 // Client returns the HTTP client to be used in APIs calls.
 func (session *Session) Client() *http.Client {
 	return session.config.Client
+}
+
+func (session *Session) authorizationHeader(request *http.Request) {
+	auth := session.response.TokenType + " " + session.response.AccessToken
+	request.Header.Add("Authorization", auth)
 }
