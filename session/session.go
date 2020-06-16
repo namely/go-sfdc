@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/credentials"
@@ -14,8 +15,9 @@ import (
 // Session is the authentication response.  This is used to generate the
 // authorization header for the Salesforce API calls.
 type Session struct {
-	response *sessionPasswordResponse
-	config   sfdc.Configuration
+	response   *sessionPasswordResponse
+	responseMu sync.RWMutex // response guardian
+	config     sfdc.Configuration
 }
 
 // Clienter interface provides the HTTP client used by the
@@ -63,7 +65,7 @@ const oauthEndpoint = "/services/oauth2/token"
 // supply the proper credentials and a HTTP client.
 func Open(config sfdc.Configuration) (*Session, error) {
 	if config.Credentials == nil {
-		return nil, errors.New("session: configuration crendentials can not be nil")
+		return nil, errors.New("session: configuration credentials can not be nil")
 	}
 	if config.Client == nil {
 		return nil, errors.New("session: configuration client can not be nil")
@@ -91,7 +93,6 @@ func Open(config sfdc.Configuration) (*Session, error) {
 }
 
 func passwordSessionRequest(creds *credentials.Credentials) (*http.Request, error) {
-
 	oauthURL := creds.URL() + oauthEndpoint
 
 	body, err := creds.Retrieve()
@@ -100,7 +101,6 @@ func passwordSessionRequest(creds *credentials.Credentials) (*http.Request, erro
 	}
 
 	request, err := http.NewRequest(http.MethodPost, oauthURL, body)
-
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +120,7 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 		return nil, fmt.Errorf("session response error: %d %s", response.StatusCode, response.Status)
 	}
 	decoder := json.NewDecoder(response.Body)
+	// TODO: call before status check:
 	defer response.Body.Close()
 
 	var sessionResponse sessionPasswordResponse
@@ -134,18 +135,27 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 // InstanceURL will return the Salesforce instance
 // from the session authentication.
 func (s *Session) InstanceURL() string {
+	s.responseMu.RLock()
+	defer s.responseMu.RUnlock()
+
 	return s.response.InstanceURL
 }
 
 // ServiceURL will return the Salesforce instance for the
 // service URL.
 func (s *Session) ServiceURL() string {
+	s.responseMu.RLock()
+	defer s.responseMu.RUnlock()
+
 	return fmt.Sprintf("%s/services/data/v%d.0", s.response.InstanceURL, s.config.Version)
 }
 
 // AuthorizationHeader will add the authorization to the
 // HTTP request's header.
 func (s *Session) AuthorizationHeader(req *http.Request) {
+	s.responseMu.RLock()
+	defer s.responseMu.RUnlock()
+
 	s.authorizationHeader(req)
 }
 
