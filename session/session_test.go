@@ -15,8 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPasswordSessionRequest(t *testing.T) {
-
+func Test_passwordSessionRequest(t *testing.T) {
 	scenarios := []struct {
 		desc  string
 		creds credentials.PasswordCredentials
@@ -95,7 +94,7 @@ func TestPasswordSessionRequest(t *testing.T) {
 
 }
 
-func TestPasswordSessionResponse(t *testing.T) {
+func Test_passwordSessionResponse(t *testing.T) {
 	scenarios := []struct {
 		desc     string
 		url      string
@@ -173,7 +172,6 @@ func TestPasswordSessionResponse(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-
 		request, err := http.NewRequest(http.MethodPost, scenario.url, nil)
 
 		if err != nil {
@@ -215,10 +213,8 @@ func TestPasswordSessionResponse(t *testing.T) {
 				if response.Signature != scenario.response.Signature {
 					t.Errorf("%s Signature %s %s", scenario.desc, scenario.response.Signature, response.Signature)
 				}
-
 			}
 		}
-
 	}
 }
 
@@ -229,6 +225,7 @@ func testNewPasswordCredentials(cred credentials.PasswordCredentials) *credentia
 	}
 	return creds
 }
+
 func TestNewPasswordSession(t *testing.T) {
 	scenarios := []struct {
 		desc    string
@@ -326,7 +323,6 @@ func TestNewPasswordSession(t *testing.T) {
 	}
 
 	for _, scenario := range scenarios {
-
 		session, err := Open(scenario.config)
 
 		if err != nil && scenario.err == nil {
