@@ -131,30 +131,30 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 	return &sessionResponse, nil
 }
 
-// InstanceURL will retuern the Salesforce instance
+// InstanceURL will return the Salesforce instance
 // from the session authentication.
-func (session *Session) InstanceURL() string {
-	return session.response.InstanceURL
+func (s *Session) InstanceURL() string {
+	return s.response.InstanceURL
 }
 
 // ServiceURL will return the Salesforce instance for the
 // service URL.
-func (session *Session) ServiceURL() string {
-	return fmt.Sprintf("%s/services/data/v%d.0", session.response.InstanceURL, session.config.Version)
+func (s *Session) ServiceURL() string {
+	return fmt.Sprintf("%s/services/data/v%d.0", s.response.InstanceURL, s.config.Version)
 }
 
 // AuthorizationHeader will add the authorization to the
 // HTTP request's header.
-func (session *Session) AuthorizationHeader(request *http.Request) {
-	session.authorizationHeader(request)
+func (s *Session) AuthorizationHeader(req *http.Request) {
+	s.authorizationHeader(req)
 }
 
 // Client returns the HTTP client to be used in APIs calls.
-func (session *Session) Client() *http.Client {
-	return session.config.Client
+func (s *Session) Client() *http.Client {
+	return s.config.Client
 }
 
-func (session *Session) authorizationHeader(request *http.Request) {
-	auth := session.response.TokenType + " " + session.response.AccessToken
-	request.Header.Add("Authorization", auth)
+func (s *Session) authorizationHeader(req *http.Request) {
+	auth := s.response.TokenType + " " + s.response.AccessToken
+	req.Header.Add("Authorization", auth)
 }
