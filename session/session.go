@@ -12,7 +12,7 @@ import (
 )
 
 // Session is the authentication response.  This is used to generate the
-// authroization header for the Salesforce API calls.
+// authorization header for the Salesforce API calls.
 type Session struct {
 	response *sessionPasswordResponse
 	config   sfdc.Configuration
