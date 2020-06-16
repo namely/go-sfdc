@@ -1,9 +1,8 @@
 package bulk
 
 import (
-	"errors"
-
 	"github.com/namely/go-sfdc/v3/session"
+	"github.com/pkg/errors"
 )
 
 const bulk2Endpoint = "/jobs/ingest"
@@ -19,6 +18,12 @@ func NewResource(session session.ServiceFormatter) (*Resource, error) {
 	if session == nil {
 		return nil, errors.New("bulk: session can not be nil")
 	}
+
+	err := session.Refresh()
+	if err != nil {
+		return nil, errors.Wrap(err, "session refresh")
+	}
+
 	return &Resource{
 		session: session,
 	}, nil

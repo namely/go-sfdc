@@ -1,13 +1,13 @@
 package sobject
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"time"
 
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/session"
+	"github.com/pkg/errors"
 )
 
 // ObjectURLs is the URL for the SObject metadata.
@@ -43,6 +43,12 @@ func NewResources(session session.ServiceFormatter) (*Resources, error) {
 	if session == nil {
 		return nil, errors.New("sobject resource: session can not be nil")
 	}
+
+	err := session.Refresh()
+	if err != nil {
+		return nil, errors.Wrap(err, "session refresh")
+	}
+
 	return &Resources{
 		metadata: &metadata{
 			session: session,

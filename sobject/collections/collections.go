@@ -4,7 +4,6 @@ package collections
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/session"
 	"github.com/namely/go-sfdc/v3/sobject"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -49,6 +49,12 @@ func NewResources(session session.ServiceFormatter) (*Resource, error) {
 	if session == nil {
 		return nil, errors.New("collections: session can not be nil")
 	}
+
+	err := session.Refresh()
+	if err != nil {
+		return nil, errors.Wrap(err, "session refresh")
+	}
+
 	return &Resource{
 		update: &update{
 			session: session,

@@ -3,12 +3,12 @@ package composite
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/session"
+	"github.com/pkg/errors"
 )
 
 // Subrequester provides the composite API requests.  The
@@ -62,6 +62,12 @@ func NewResource(session session.ServiceFormatter) (*Resource, error) {
 	if session == nil {
 		return nil, errors.New("composite: session can not be nil")
 	}
+
+	err := session.Refresh()
+	if err != nil {
+		return nil, errors.Wrap(err, "session refresh")
+	}
+
 	return &Resource{
 		session: session,
 	}, nil
