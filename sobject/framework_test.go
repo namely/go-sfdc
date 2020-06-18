@@ -620,21 +620,16 @@ func TestSalesforceAPI_GetContent(t *testing.T) {
 }
 
 func TestNewResources(t *testing.T) {
-	type args struct {
-		session session.ServiceFormatter
-	}
 	tests := []struct {
 		name    string
-		args    args
+		session session.ServiceFormatter
 		want    *Resources
 		wantErr bool
 	}{
 		{
 			name: "passing",
-			args: args{
-				session: &mockSessionFormatter{
-					url: "https://test.salesforce.com",
-				},
+			session: &mockSessionFormatter{
+				url: "https://test.salesforce.com",
 			},
 			want: &Resources{
 				metadata: &metadata{
@@ -662,14 +657,13 @@ func TestNewResources(t *testing.T) {
 		},
 		{
 			name:    "error",
-			args:    args{},
 			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewResources(tt.args.session)
+			got, err := NewResources(tt.session)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewResources() error = %v, wantErr %v", err, tt.wantErr)
 				return
