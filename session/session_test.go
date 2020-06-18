@@ -577,7 +577,7 @@ func TestSession_Refresh(t *testing.T) {
 	t.Run("expired", func(t *testing.T) {
 		s := &Session{
 			response:  response,
-			expiresAt: time.Now().Add(-2 * defaultSessionDuration).UTC(),
+			expiresAt: time.Now().Add(-1 * time.Minute).UTC(),
 			config:    config,
 		}
 
@@ -589,7 +589,7 @@ func TestSession_Refresh(t *testing.T) {
 	t.Run("not_expired", func(t *testing.T) {
 		s := &Session{
 			response:  response,
-			expiresAt: time.Now().Add(2 * defaultSessionDuration).UTC(),
+			expiresAt: time.Now().Add(time.Minute).UTC(),
 			config:    config,
 		}
 
