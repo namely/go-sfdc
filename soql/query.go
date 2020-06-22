@@ -2,7 +2,6 @@ package soql
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -123,18 +122,7 @@ func (r *Resource) queryResponse(request *http.Request) (queryResponse, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		var queryErrs []sfdc.Error
-		err = decoder.Decode(&queryErrs)
-		var errMsg error
-		if err == nil {
-			for _, queryErr := range queryErrs {
-				errMsg = fmt.Errorf("insert response err: %s: %s", queryErr.ErrorCode, queryErr.Message)
-			}
-		} else {
-			errMsg = fmt.Errorf("insert response err: %d %s", response.StatusCode, response.Status)
-		}
-
-		return queryResponse{}, errMsg
+		return queryResponse{}, sfdc.HandleError(response)
 	}
 
 	var resp queryResponse
