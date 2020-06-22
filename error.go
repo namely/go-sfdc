@@ -66,7 +66,7 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 }
 
 // HandleError makes an error from http.Response.
-// It is the caller's responsibility to close Body.
+// It is the caller's responsibility to close resp.Body.
 func HandleError(resp *http.Response) error {
 	return errors.Wrap(newErrorFromBody(resp), resp.Status)
 }
