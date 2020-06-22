@@ -3,9 +3,9 @@ This is a `golang` library for interfacing with `Salesforce` APIs.
 
 ## Getting Started
 ### Installing
-To start using GO-SFDC, install GO and run `go get`
+To start using go-sfdc, install GO and run `go get`
 ```
-go get -u github.com/namely/go-sfdc
+go get github.com/namely/go-sfdc/v3
 ```
 This will retrieve the library.
 
