@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,32 +88,28 @@ func (alwaysError) Read(p []byte) (int, error) {
 func TestHandleError(t *testing.T) {
 	tests := map[string]struct {
 		resp    *http.Response
-		wantErr error
+		wantErr string
 	}{
 		"400": {
 			resp: &http.Response{
-				Status: "400 " + http.StatusText(http.StatusBadRequest),
+				Status: "400 " + http.StatusText(400),
 				Body:   ioutil.NopCloser(strings.NewReader(`{"message":"invalid"}`)),
 			},
-			wantErr: errors.New(`400 Bad Request: {"message":"invalid"}`),
+			wantErr: `400 Bad Request: {"message":"invalid"}`,
 		},
 		"read_body_error": {
 			resp: &http.Response{
-				Status: "500 " + http.StatusText(http.StatusInternalServerError),
+				Status: "500 " + http.StatusText(500),
 				Body:   ioutil.NopCloser(alwaysError{}),
 			},
-			wantErr: errors.New(`500 Internal Server Error: could not read the body with error: unexpected EOF`),
+			wantErr: `500 Internal Server Error: could not read the body with error: unexpected EOF`,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := HandleError(tt.resp)
-			if tt.wantErr != nil {
-				require.EqualError(t, err, tt.wantErr.Error())
-			} else {
-				require.NoError(t, err)
-			}
+			require.EqualError(t, err, tt.wantErr)
 		})
 	}
 }
