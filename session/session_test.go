@@ -199,14 +199,14 @@ func testNewPasswordCredentials(t *testing.T, cred credentials.PasswordCredentia
 }
 
 func TestNewPasswordSession(t *testing.T) {
-	scenarios := []struct {
-		desc    string
-		config  sfdc.Configuration
-		session *Session
-		err     error
+	tests := []struct {
+		name        string
+		config      sfdc.Configuration
+		wantSession *Session
+		wantErr     error
 	}{
 		{
-			desc: "Passing",
+			name: "Passing",
 			config: sfdc.Configuration{
 				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "http://test.password.session",
@@ -234,7 +234,7 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Version: 45,
 			},
-			session: &Session{
+			wantSession: &Session{
 				response: &sessionPasswordResponse{
 					AccessToken: "token",
 					InstanceURL: "https://some.salesforce.instance.com",
@@ -244,11 +244,10 @@ func TestNewPasswordSession(t *testing.T) {
 					Signature:   "hello",
 				},
 			},
-			err: nil,
 		},
 
 		{
-			desc: "Error Request",
+			name: "ErrorRequest",
 			config: sfdc.Configuration{
 				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "123://test.password.session",
@@ -265,11 +264,11 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Version: 45,
 			},
-			session: nil,
-			err:     errors.New(`parse "123://test.password.session/services/oauth2/token": first path segment in URL cannot contain colon`),
+			wantErr: errors.New(`parse "123://test.password.session/services/oauth2/token": first path segment in URL cannot contain colon`),
 		},
+
 		{
-			desc: "Error Response",
+			name: "ErrorResponse",
 			config: sfdc.Configuration{
 				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "http://test.password.session",
@@ -288,51 +287,22 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Version: 45,
 			},
-			session: nil,
-			err:     fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr: fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
 		},
 	}
 
-	for _, scenario := range scenarios {
-		session, err := Open(scenario.config)
-
-		if err != nil && scenario.err == nil {
-			t.Errorf("%s Error was not expected %s", scenario.desc, err.Error())
-		} else if err == nil && scenario.err != nil {
-			t.Errorf("%s Error was expected %s", scenario.desc, scenario.err.Error())
-		} else {
-			if err != nil {
-				if err.Error() != scenario.err.Error() {
-					t.Errorf("%s Error %s :: %s", scenario.desc, err.Error(), scenario.err.Error())
-				}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			session, err := Open(tc.config)
+			if tc.wantErr != nil {
+				require.EqualError(t, err, tc.wantErr.Error())
 			} else {
-				if session.response.AccessToken != scenario.session.response.AccessToken {
-					t.Errorf("%s Access Tokens %s %s", scenario.desc, scenario.session.response.AccessToken, session.response.AccessToken)
-				}
-
-				if session.response.InstanceURL != scenario.session.response.InstanceURL {
-					t.Errorf("%s Instance URL %s %s", scenario.desc, scenario.session.response.InstanceURL, session.response.InstanceURL)
-				}
-
-				if session.response.ID != scenario.session.response.ID {
-					t.Errorf("%s ID %s %s", scenario.desc, scenario.session.response.ID, session.response.ID)
-				}
-
-				if session.response.TokenType != scenario.session.response.TokenType {
-					t.Errorf("%s Token Type %s %s", scenario.desc, scenario.session.response.TokenType, session.response.TokenType)
-				}
-
-				if session.response.IssuedAt != scenario.session.response.IssuedAt {
-					t.Errorf("%s Issued At %s %s", scenario.desc, scenario.session.response.IssuedAt, session.response.IssuedAt)
-				}
-
-				if session.response.Signature != scenario.session.response.Signature {
-					t.Errorf("%s Signature %s %s", scenario.desc, scenario.session.response.Signature, session.response.Signature)
-				}
-
+				require.NoError(t, err)
+				require.NotNil(t, session)
+				require.NotNil(t, session.response)
+				assert.Equal(t, *tc.wantSession.response, *session.response)
 			}
-		}
-
+		})
 	}
 }
 
