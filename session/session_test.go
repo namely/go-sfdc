@@ -97,11 +97,11 @@ func Test_passwordSessionRequest(t *testing.T) {
 
 func Test_passwordSessionResponse(t *testing.T) {
 	tests := []struct {
-		name     string
-		url      string
-		client   *http.Client
-		response *sessionPasswordResponse
-		wantErr  error
+		name         string
+		url          string
+		client       *http.Client
+		wantResponse sessionPasswordResponse
+		wantErr      error
 	}{
 		{
 			name: "PassingResponse",
@@ -123,7 +123,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-			response: &sessionPasswordResponse{
+			wantResponse: sessionPasswordResponse{
 				AccessToken: "token",
 				InstanceURL: "https://some.salesforce.instance.com",
 				ID:          "https://test.salesforce.com/id/123456789",
@@ -144,8 +144,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-			response: &sessionPasswordResponse{},
-			wantErr:  fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr: fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
 		},
 		{
 			name: "ResponseDecodeError",
@@ -167,8 +166,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-			response: &sessionPasswordResponse{},
-			wantErr:  errors.New("invalid character '}' looking for beginning of object key string"),
+			wantErr: errors.New("invalid character '}' looking for beginning of object key string"),
 		},
 	}
 
@@ -184,30 +182,8 @@ func Test_passwordSessionResponse(t *testing.T) {
 				require.EqualError(t, err, tc.wantErr.Error())
 			} else {
 				require.NoError(t, err)
-
-				if response.AccessToken != tc.response.AccessToken {
-					t.Errorf("%s Access Tokens %s %s", tc.name, tc.response.AccessToken, response.AccessToken)
-				}
-
-				if response.InstanceURL != tc.response.InstanceURL {
-					t.Errorf("%s Instance URL %s %s", tc.name, tc.response.InstanceURL, response.InstanceURL)
-				}
-
-				if response.ID != tc.response.ID {
-					t.Errorf("%s ID %s %s", tc.name, tc.response.ID, response.ID)
-				}
-
-				if response.TokenType != tc.response.TokenType {
-					t.Errorf("%s Token Type %s %s", tc.name, tc.response.TokenType, response.TokenType)
-				}
-
-				if response.IssuedAt != tc.response.IssuedAt {
-					t.Errorf("%s Issued At %s %s", tc.name, tc.response.IssuedAt, response.IssuedAt)
-				}
-
-				if response.Signature != tc.response.Signature {
-					t.Errorf("%s Signature %s %s", tc.name, tc.response.Signature, response.Signature)
-				}
+				require.NotNil(t, response)
+				assert.Equal(t, tc.wantResponse, *response)
 			}
 		})
 	}
