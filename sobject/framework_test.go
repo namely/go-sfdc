@@ -7,6 +7,7 @@ import (
 
 	"github.com/namely/go-sfdc/v3"
 	"github.com/namely/go-sfdc/v3/session"
+	"github.com/pkg/errors"
 )
 
 func TestSalesforceAPI_Metadata(t *testing.T) {
@@ -620,21 +621,16 @@ func TestSalesforceAPI_GetContent(t *testing.T) {
 }
 
 func TestNewResources(t *testing.T) {
-	type args struct {
-		session session.ServiceFormatter
-	}
 	tests := []struct {
 		name    string
-		args    args
+		session session.ServiceFormatter
 		want    *Resources
 		wantErr bool
 	}{
 		{
 			name: "passing",
-			args: args{
-				session: &mockSessionFormatter{
-					url: "https://test.salesforce.com",
-				},
+			session: &mockSessionFormatter{
+				url: "https://test.salesforce.com",
 			},
 			want: &Resources{
 				metadata: &metadata{
@@ -661,15 +657,24 @@ func TestNewResources(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "error",
-			args:    args{},
+			name:    "error_nil_session",
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "error_refresh",
+			session: &mockSessionFormatter{
+				url:        "https://test.salesforce.com",
+				refreshErr: errors.New("failed to refresh session"),
+			},
+			wantErr: true,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewResources(tt.args.session)
+			got, err := NewResources(tt.session)
+			t.Log("got error:", err)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewResources() error = %v, wantErr %v", err, tt.wantErr)
 				return

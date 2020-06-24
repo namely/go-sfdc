@@ -1,6 +1,7 @@
 package session
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -96,15 +97,15 @@ func Test_passwordSessionRequest(t *testing.T) {
 }
 
 func Test_passwordSessionResponse(t *testing.T) {
-	scenarios := []struct {
-		desc     string
-		url      string
-		client   *http.Client
-		response *sessionPasswordResponse
-		err      error
+	tests := []struct {
+		name         string
+		url          string
+		client       *http.Client
+		wantResponse sessionPasswordResponse
+		wantErr      error
 	}{
 		{
-			desc: "Passing Response",
+			name: "PassingResponse",
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				resp := `
@@ -123,7 +124,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-			response: &sessionPasswordResponse{
+			wantResponse: sessionPasswordResponse{
 				AccessToken: "token",
 				InstanceURL: "https://some.salesforce.instance.com",
 				ID:          "https://test.salesforce.com/id/123456789",
@@ -131,10 +132,10 @@ func Test_passwordSessionResponse(t *testing.T) {
 				IssuedAt:    "1553568410028",
 				Signature:   "hello",
 			},
-			err: nil,
+			wantErr: nil,
 		},
 		{
-			desc: "Failed Response",
+			name: "FailedResponse",
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				return &http.Response{
@@ -144,11 +145,10 @@ func Test_passwordSessionResponse(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-			response: &sessionPasswordResponse{},
-			err:      fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr: fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
 		},
 		{
-			desc: "Response Decode Error",
+			name: "ResponseDecodeError",
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				resp := `
@@ -167,55 +167,26 @@ func Test_passwordSessionResponse(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			}),
-			response: &sessionPasswordResponse{},
-			err:      errors.New("invalid character '}' looking for beginning of object key string"),
+			wantErr: errors.New("invalid character '}' looking for beginning of object key string"),
 		},
 	}
 
-	for _, scenario := range scenarios {
-		request, err := http.NewRequest(http.MethodPost, scenario.url, nil)
-
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-
-		response, err := passwordSessionResponse(request, scenario.client)
-
-		if err != nil && scenario.err == nil {
-			t.Errorf("%s Error was not expected %s", scenario.desc, err.Error())
-		} else if err == nil && scenario.err != nil {
-			t.Errorf("%s Error was expected %s", scenario.desc, scenario.err.Error())
-		} else {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			request, err := http.NewRequest(http.MethodPost, tc.url, nil)
 			if err != nil {
-				if err.Error() != scenario.err.Error() {
-					t.Errorf("%s Error %s :: %s", scenario.desc, err.Error(), scenario.err.Error())
-				}
-			} else {
-				if response.AccessToken != scenario.response.AccessToken {
-					t.Errorf("%s Access Tokens %s %s", scenario.desc, scenario.response.AccessToken, response.AccessToken)
-				}
-
-				if response.InstanceURL != scenario.response.InstanceURL {
-					t.Errorf("%s Instance URL %s %s", scenario.desc, scenario.response.InstanceURL, response.InstanceURL)
-				}
-
-				if response.ID != scenario.response.ID {
-					t.Errorf("%s ID %s %s", scenario.desc, scenario.response.ID, response.ID)
-				}
-
-				if response.TokenType != scenario.response.TokenType {
-					t.Errorf("%s Token Type %s %s", scenario.desc, scenario.response.TokenType, response.TokenType)
-				}
-
-				if response.IssuedAt != scenario.response.IssuedAt {
-					t.Errorf("%s Issued At %s %s", scenario.desc, scenario.response.IssuedAt, response.IssuedAt)
-				}
-
-				if response.Signature != scenario.response.Signature {
-					t.Errorf("%s Signature %s %s", scenario.desc, scenario.response.Signature, response.Signature)
-				}
+				t.Fatal(err)
 			}
-		}
+
+			response, err := passwordSessionResponse(request, tc.client)
+			if tc.wantErr != nil {
+				require.EqualError(t, err, tc.wantErr.Error())
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, response)
+				assert.Equal(t, tc.wantResponse, *response)
+			}
+		})
 	}
 }
 
@@ -229,14 +200,14 @@ func testNewPasswordCredentials(t *testing.T, cred credentials.PasswordCredentia
 }
 
 func TestNewPasswordSession(t *testing.T) {
-	scenarios := []struct {
-		desc    string
-		config  sfdc.Configuration
-		session *Session
-		err     error
+	tests := []struct {
+		name        string
+		config      sfdc.Configuration
+		wantSession *Session
+		wantErr     error
 	}{
 		{
-			desc: "Passing",
+			name: "Passing",
 			config: sfdc.Configuration{
 				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "http://test.password.session",
@@ -264,7 +235,7 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Version: 45,
 			},
-			session: &Session{
+			wantSession: &Session{
 				response: &sessionPasswordResponse{
 					AccessToken: "token",
 					InstanceURL: "https://some.salesforce.instance.com",
@@ -274,11 +245,10 @@ func TestNewPasswordSession(t *testing.T) {
 					Signature:   "hello",
 				},
 			},
-			err: nil,
 		},
 
 		{
-			desc: "Error Request",
+			name: "ErrorRequest",
 			config: sfdc.Configuration{
 				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "123://test.password.session",
@@ -295,11 +265,11 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Version: 45,
 			},
-			session: nil,
-			err:     errors.New(`parse "123://test.password.session/services/oauth2/token": first path segment in URL cannot contain colon`),
+			wantErr: errors.New(`parse "123://test.password.session/services/oauth2/token": first path segment in URL cannot contain colon`),
 		},
+
 		{
-			desc: "Error Response",
+			name: "ErrorResponse",
 			config: sfdc.Configuration{
 				Credentials: testNewPasswordCredentials(t, credentials.PasswordCredentials{
 					URL:          "http://test.password.session",
@@ -318,51 +288,22 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Version: 45,
 			},
-			session: nil,
-			err:     fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr: fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
 		},
 	}
 
-	for _, scenario := range scenarios {
-		session, err := Open(scenario.config)
-
-		if err != nil && scenario.err == nil {
-			t.Errorf("%s Error was not expected %s", scenario.desc, err.Error())
-		} else if err == nil && scenario.err != nil {
-			t.Errorf("%s Error was expected %s", scenario.desc, scenario.err.Error())
-		} else {
-			if err != nil {
-				if err.Error() != scenario.err.Error() {
-					t.Errorf("%s Error %s :: %s", scenario.desc, err.Error(), scenario.err.Error())
-				}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			session, err := Open(tc.config)
+			if tc.wantErr != nil {
+				require.EqualError(t, err, tc.wantErr.Error())
 			} else {
-				if session.response.AccessToken != scenario.session.response.AccessToken {
-					t.Errorf("%s Access Tokens %s %s", scenario.desc, scenario.session.response.AccessToken, session.response.AccessToken)
-				}
-
-				if session.response.InstanceURL != scenario.session.response.InstanceURL {
-					t.Errorf("%s Instance URL %s %s", scenario.desc, scenario.session.response.InstanceURL, session.response.InstanceURL)
-				}
-
-				if session.response.ID != scenario.session.response.ID {
-					t.Errorf("%s ID %s %s", scenario.desc, scenario.session.response.ID, session.response.ID)
-				}
-
-				if session.response.TokenType != scenario.session.response.TokenType {
-					t.Errorf("%s Token Type %s %s", scenario.desc, scenario.session.response.TokenType, session.response.TokenType)
-				}
-
-				if session.response.IssuedAt != scenario.session.response.IssuedAt {
-					t.Errorf("%s Issued At %s %s", scenario.desc, scenario.session.response.IssuedAt, session.response.IssuedAt)
-				}
-
-				if session.response.Signature != scenario.session.response.Signature {
-					t.Errorf("%s Signature %s %s", scenario.desc, scenario.session.response.Signature, session.response.Signature)
-				}
-
+				require.NoError(t, err)
+				require.NotNil(t, session)
+				require.NotNil(t, session.response)
+				assert.Equal(t, *tc.wantSession.response, *session.response)
 			}
-		}
-
+		})
 	}
 }
 
@@ -577,7 +518,7 @@ func TestSession_Refresh(t *testing.T) {
 	t.Run("expired", func(t *testing.T) {
 		s := &Session{
 			response:  response,
-			expiresAt: time.Now().Add(-2 * defaultSessionDuration).UTC(),
+			expiresAt: time.Now().Add(-1 * time.Minute).UTC(),
 			config:    config,
 		}
 
@@ -589,12 +530,36 @@ func TestSession_Refresh(t *testing.T) {
 	t.Run("not_expired", func(t *testing.T) {
 		s := &Session{
 			response:  response,
-			expiresAt: time.Now().Add(2 * defaultSessionDuration).UTC(),
+			expiresAt: time.Now().Add(time.Minute).UTC(),
 			config:    config,
 		}
 
 		err := s.Refresh()
 		require.NoError(t, err)
 		assert.Equal(t, oldToken, s.response.AccessToken)
+	})
+
+	t.Run("failed_to_refresh_expired", func(t *testing.T) {
+		const wantErr = "session response error: 504 Gateway Timeout"
+		const statusCode = http.StatusGatewayTimeout
+		client := mockHTTPClient(func(req *http.Request) *http.Response {
+			return &http.Response{
+				StatusCode: statusCode,
+				Status:     http.StatusText(statusCode),
+				Body:       ioutil.NopCloser(new(bytes.Buffer)),
+			}
+		})
+		s := &Session{
+			response:  response,
+			expiresAt: time.Now().Add(-1 * time.Minute).UTC(),
+			config: sfdc.Configuration{
+				SessionDuration: defaultSessionDuration,
+				Client:          client,
+				Credentials:     creds,
+			},
+		}
+
+		err := s.Refresh()
+		assert.EqualError(t, err, wantErr)
 	})
 }
