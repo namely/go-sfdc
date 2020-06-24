@@ -101,7 +101,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 		url      string
 		client   *http.Client
 		response *sessionPasswordResponse
-		err      error
+		wantErr  error
 	}{
 		{
 			name: "PassingResponse",
@@ -131,7 +131,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 				IssuedAt:    "1553568410028",
 				Signature:   "hello",
 			},
-			err: nil,
+			wantErr: nil,
 		},
 		{
 			name: "FailedResponse",
@@ -145,7 +145,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 				}
 			}),
 			response: &sessionPasswordResponse{},
-			err:      fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr:  fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
 		},
 		{
 			name: "ResponseDecodeError",
@@ -168,7 +168,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 				}
 			}),
 			response: &sessionPasswordResponse{},
-			err:      errors.New("invalid character '}' looking for beginning of object key string"),
+			wantErr:  errors.New("invalid character '}' looking for beginning of object key string"),
 		},
 	}
 
@@ -180,39 +180,33 @@ func Test_passwordSessionResponse(t *testing.T) {
 			}
 
 			response, err := passwordSessionResponse(request, tc.client)
-			if err != nil && tc.err == nil {
-				require.NoError(t, err)
-			} else if err == nil && tc.err != nil {
-				t.Errorf("%s Error was expected %s", tc.name, tc.err.Error())
+			if tc.wantErr != nil {
+				require.EqualError(t, err, tc.wantErr.Error())
 			} else {
-				if err != nil {
-					if err.Error() != tc.err.Error() {
-						t.Errorf("%s Error %s :: %s", tc.name, err.Error(), tc.err.Error())
-					}
-				} else {
-					if response.AccessToken != tc.response.AccessToken {
-						t.Errorf("%s Access Tokens %s %s", tc.name, tc.response.AccessToken, response.AccessToken)
-					}
+				require.NoError(t, err)
 
-					if response.InstanceURL != tc.response.InstanceURL {
-						t.Errorf("%s Instance URL %s %s", tc.name, tc.response.InstanceURL, response.InstanceURL)
-					}
+				if response.AccessToken != tc.response.AccessToken {
+					t.Errorf("%s Access Tokens %s %s", tc.name, tc.response.AccessToken, response.AccessToken)
+				}
 
-					if response.ID != tc.response.ID {
-						t.Errorf("%s ID %s %s", tc.name, tc.response.ID, response.ID)
-					}
+				if response.InstanceURL != tc.response.InstanceURL {
+					t.Errorf("%s Instance URL %s %s", tc.name, tc.response.InstanceURL, response.InstanceURL)
+				}
 
-					if response.TokenType != tc.response.TokenType {
-						t.Errorf("%s Token Type %s %s", tc.name, tc.response.TokenType, response.TokenType)
-					}
+				if response.ID != tc.response.ID {
+					t.Errorf("%s ID %s %s", tc.name, tc.response.ID, response.ID)
+				}
 
-					if response.IssuedAt != tc.response.IssuedAt {
-						t.Errorf("%s Issued At %s %s", tc.name, tc.response.IssuedAt, response.IssuedAt)
-					}
+				if response.TokenType != tc.response.TokenType {
+					t.Errorf("%s Token Type %s %s", tc.name, tc.response.TokenType, response.TokenType)
+				}
 
-					if response.Signature != tc.response.Signature {
-						t.Errorf("%s Signature %s %s", tc.name, tc.response.Signature, response.Signature)
-					}
+				if response.IssuedAt != tc.response.IssuedAt {
+					t.Errorf("%s Issued At %s %s", tc.name, tc.response.IssuedAt, response.IssuedAt)
+				}
+
+				if response.Signature != tc.response.Signature {
+					t.Errorf("%s Signature %s %s", tc.name, tc.response.Signature, response.Signature)
 				}
 			}
 		})
