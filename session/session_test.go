@@ -1,7 +1,6 @@
 package session
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -139,13 +138,12 @@ func Test_passwordSessionResponse(t *testing.T) {
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				return &http.Response{
-					StatusCode: http.StatusInternalServerError,
-					Status:     "Some status",
-					Body:       ioutil.NopCloser(strings.NewReader("")),
-					Header:     make(http.Header),
+					Status: "400 Bad Request",
+					Body:   ioutil.NopCloser(strings.NewReader(`{"error":"invalid_grant","error_description":"authentication failure"}`)),
+					Header: make(http.Header),
 				}
 			}),
-			wantErr: fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr: fmt.Errorf(`session response: 400 Bad Request: {"error":"invalid_grant","error_description":"authentication failure"}`),
 		},
 		{
 			name: "ResponseDecodeError",
@@ -280,15 +278,14 @@ func TestNewPasswordSession(t *testing.T) {
 				}),
 				Client: mockHTTPClient(func(req *http.Request) *http.Response {
 					return &http.Response{
-						StatusCode: http.StatusInternalServerError,
-						Status:     "Some status",
-						Body:       ioutil.NopCloser(strings.NewReader("")),
-						Header:     make(http.Header),
+						Status: "400 Bad Request",
+						Body:   ioutil.NopCloser(strings.NewReader("{\"error\":\"invalid_grant\",\"error_description\":\"authentication failure\"}")),
+						Header: make(http.Header),
 					}
 				}),
 				Version: 45,
 			},
-			wantErr: fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
+			wantErr: fmt.Errorf("session response: 400 Bad Request: {\"error\":\"invalid_grant\",\"error_description\":\"authentication failure\"}"),
 		},
 	}
 
@@ -540,13 +537,12 @@ func TestSession_Refresh(t *testing.T) {
 	})
 
 	t.Run("failed_to_refresh_expired", func(t *testing.T) {
-		const wantErr = "session response error: 504 Gateway Timeout"
-		const statusCode = http.StatusGatewayTimeout
+		const wantErr = `session response: 400 Bad Request: {"error":"invalid_grant","error_description":"authentication failure"}`
 		client := mockHTTPClient(func(req *http.Request) *http.Response {
 			return &http.Response{
-				StatusCode: statusCode,
-				Status:     http.StatusText(statusCode),
-				Body:       ioutil.NopCloser(new(bytes.Buffer)),
+				Status: "400 Bad Request",
+				Body:   ioutil.NopCloser(strings.NewReader(`{"error":"invalid_grant","error_description":"authentication failure"}`)),
+				Header: make(http.Header),
 			}
 		})
 		s := &Session{

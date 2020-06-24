@@ -124,7 +124,7 @@ func passwordSessionResponse(request *http.Request, client *http.Client) (*sessi
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return nil, sfdc.HandleError(response)
+		return nil, errors.Wrap(sfdc.HandleError(response), "session response")
 	}
 
 	var sessionResponse sessionPasswordResponse
