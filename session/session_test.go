@@ -174,7 +174,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			request, err := http.NewRequest(http.MethodPost, tc.url, nil)
 			if err != nil {
-				t.Fatal(err.Error())
+				t.Fatal(err)
 			}
 
 			response, err := passwordSessionResponse(request, tc.client)
