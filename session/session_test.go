@@ -279,13 +279,13 @@ func TestNewPasswordSession(t *testing.T) {
 				Client: mockHTTPClient(func(req *http.Request) *http.Response {
 					return &http.Response{
 						Status: "400 Bad Request",
-						Body:   ioutil.NopCloser(strings.NewReader("{\"error\":\"invalid_grant\",\"error_description\":\"authentication failure\"}")),
+						Body:   ioutil.NopCloser(strings.NewReader(`{"error":"invalid_grant","error_description":"authentication failure"}`)),
 						Header: make(http.Header),
 					}
 				}),
 				Version: 45,
 			},
-			wantErr: fmt.Errorf("session response: 400 Bad Request: {\"error\":\"invalid_grant\",\"error_description\":\"authentication failure\"}"),
+			wantErr: fmt.Errorf(`session response: 400 Bad Request: {"error":"invalid_grant","error_description":"authentication failure"}`),
 		},
 	}
 
