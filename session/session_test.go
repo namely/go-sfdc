@@ -96,15 +96,15 @@ func Test_passwordSessionRequest(t *testing.T) {
 }
 
 func Test_passwordSessionResponse(t *testing.T) {
-	scenarios := []struct {
-		desc     string
+	tests := []struct {
+		name     string
 		url      string
 		client   *http.Client
 		response *sessionPasswordResponse
 		err      error
 	}{
 		{
-			desc: "Passing Response",
+			name: "PassingResponse",
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				resp := `
@@ -134,7 +134,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 			err: nil,
 		},
 		{
-			desc: "Failed Response",
+			name: "FailedResponse",
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				return &http.Response{
@@ -148,7 +148,7 @@ func Test_passwordSessionResponse(t *testing.T) {
 			err:      fmt.Errorf("session response error: %d %s", http.StatusInternalServerError, "Some status"),
 		},
 		{
-			desc: "Response Decode Error",
+			name: "ResponseDecodeError",
 			url:  "http://example.com/foo",
 			client: mockHTTPClient(func(req *http.Request) *http.Response {
 				resp := `
@@ -172,50 +172,50 @@ func Test_passwordSessionResponse(t *testing.T) {
 		},
 	}
 
-	for _, scenario := range scenarios {
-		request, err := http.NewRequest(http.MethodPost, scenario.url, nil)
-
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-
-		response, err := passwordSessionResponse(request, scenario.client)
-
-		if err != nil && scenario.err == nil {
-			t.Errorf("%s Error was not expected %s", scenario.desc, err.Error())
-		} else if err == nil && scenario.err != nil {
-			t.Errorf("%s Error was expected %s", scenario.desc, scenario.err.Error())
-		} else {
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			request, err := http.NewRequest(http.MethodPost, tc.url, nil)
 			if err != nil {
-				if err.Error() != scenario.err.Error() {
-					t.Errorf("%s Error %s :: %s", scenario.desc, err.Error(), scenario.err.Error())
-				}
+				t.Fatal(err.Error())
+			}
+
+			response, err := passwordSessionResponse(request, tc.client)
+			if err != nil && tc.err == nil {
+				require.NoError(t, err)
+			} else if err == nil && tc.err != nil {
+				t.Errorf("%s Error was expected %s", tc.name, tc.err.Error())
 			} else {
-				if response.AccessToken != scenario.response.AccessToken {
-					t.Errorf("%s Access Tokens %s %s", scenario.desc, scenario.response.AccessToken, response.AccessToken)
-				}
+				if err != nil {
+					if err.Error() != tc.err.Error() {
+						t.Errorf("%s Error %s :: %s", tc.name, err.Error(), tc.err.Error())
+					}
+				} else {
+					if response.AccessToken != tc.response.AccessToken {
+						t.Errorf("%s Access Tokens %s %s", tc.name, tc.response.AccessToken, response.AccessToken)
+					}
 
-				if response.InstanceURL != scenario.response.InstanceURL {
-					t.Errorf("%s Instance URL %s %s", scenario.desc, scenario.response.InstanceURL, response.InstanceURL)
-				}
+					if response.InstanceURL != tc.response.InstanceURL {
+						t.Errorf("%s Instance URL %s %s", tc.name, tc.response.InstanceURL, response.InstanceURL)
+					}
 
-				if response.ID != scenario.response.ID {
-					t.Errorf("%s ID %s %s", scenario.desc, scenario.response.ID, response.ID)
-				}
+					if response.ID != tc.response.ID {
+						t.Errorf("%s ID %s %s", tc.name, tc.response.ID, response.ID)
+					}
 
-				if response.TokenType != scenario.response.TokenType {
-					t.Errorf("%s Token Type %s %s", scenario.desc, scenario.response.TokenType, response.TokenType)
-				}
+					if response.TokenType != tc.response.TokenType {
+						t.Errorf("%s Token Type %s %s", tc.name, tc.response.TokenType, response.TokenType)
+					}
 
-				if response.IssuedAt != scenario.response.IssuedAt {
-					t.Errorf("%s Issued At %s %s", scenario.desc, scenario.response.IssuedAt, response.IssuedAt)
-				}
+					if response.IssuedAt != tc.response.IssuedAt {
+						t.Errorf("%s Issued At %s %s", tc.name, tc.response.IssuedAt, response.IssuedAt)
+					}
 
-				if response.Signature != scenario.response.Signature {
-					t.Errorf("%s Signature %s %s", scenario.desc, scenario.response.Signature, response.Signature)
+					if response.Signature != tc.response.Signature {
+						t.Errorf("%s Signature %s %s", tc.name, tc.response.Signature, response.Signature)
+					}
 				}
 			}
-		}
+		})
 	}
 }
 
