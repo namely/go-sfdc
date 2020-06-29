@@ -30,6 +30,7 @@ type ObjectURLs struct {
 type Resources struct {
 	metadata *metadata
 	describe *describe
+	list     *list
 	dml      *dml
 	query    *query
 }
@@ -56,6 +57,9 @@ func NewResources(session session.ServiceFormatter) (*Resources, error) {
 		describe: &describe{
 			session: session,
 		},
+		list: &list{
+			session: session,
+		},
 		dml: &dml{
 			session: session,
 		},
@@ -63,6 +67,15 @@ func NewResources(session session.ServiceFormatter) (*Resources, error) {
 			session: session,
 		},
 	}, nil
+}
+
+// List returns the list of sObjects available
+func (r *Resources) List() (ListValue, error) {
+	if r.list == nil {
+		return ListValue{}, errors.New("salesforce api is not initialized properly")
+	}
+
+	return r.list.callout()
 }
 
 // Metadata retrieves the SObject's metadata.

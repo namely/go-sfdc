@@ -643,6 +643,11 @@ func TestNewResources(t *testing.T) {
 						url: "https://test.salesforce.com",
 					},
 				},
+				list: &list{
+					session: &mockSessionFormatter{
+						url: "https://test.salesforce.com",
+					},
+				},
 				dml: &dml{
 					session: &mockSessionFormatter{
 						url: "https://test.salesforce.com",
