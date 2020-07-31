@@ -2,7 +2,6 @@ package sobject
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/namely/go-sfdc/v3"
@@ -19,7 +18,6 @@ type list struct {
 }
 
 func (l *list) callout() (ListValue, error) {
-
 	request, err := l.request()
 
 	if err != nil {
@@ -59,18 +57,7 @@ func (l *list) response(request *http.Request) (ListValue, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		var respErrs []sfdc.Error
-		err = decoder.Decode(&respErrs)
-		var errMsg error
-		if err == nil {
-			for _, respErr := range respErrs {
-				errMsg = fmt.Errorf("list response err: %s: %s", respErr.ErrorCode, respErr.Message)
-			}
-		} else {
-			errMsg = fmt.Errorf("list response err: %d %s", response.StatusCode, response.Status)
-		}
-
-		return ListValue{}, errMsg
+		return ListValue{}, sfdc.HandleError(response)
 	}
 
 	var value ListValue
