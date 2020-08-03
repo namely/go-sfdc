@@ -19,7 +19,6 @@ type list struct {
 
 func (l *list) callout() (ListValue, error) {
 	request, err := l.request()
-
 	if err != nil {
 		return ListValue{}, err
 	}
@@ -36,7 +35,6 @@ func (l *list) callout() (ListValue, error) {
 func (l *list) request() (*http.Request, error) {
 	url := l.session.ServiceURL() + objectEndpoint
 	request, err := http.NewRequest(http.MethodGet, url, nil)
-
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +46,6 @@ func (l *list) request() (*http.Request, error) {
 
 func (l *list) response(request *http.Request) (ListValue, error) {
 	response, err := l.session.Client().Do(request)
-
 	if err != nil {
 		return ListValue{}, err
 	}
