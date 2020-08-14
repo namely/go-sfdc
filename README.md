@@ -1,7 +1,8 @@
 # go-sfdc
-This is a `golang` library for interfacing with `Salesforce` APIs.
 
 [![Godoc Reference][godoc-img]][godoc-url] [![CI][ci-img]][ci-url] [![codecov][codecov-img]][codecov-url]
+
+This is a `golang` library for interfacing with `Salesforce` APIs.
 
 ## Getting Started
 ### Installing
