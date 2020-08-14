@@ -3,7 +3,7 @@ test-local:
 	go test `go list ./... | grep -v '/mocks' | grep -v '/gen'` -cover -count=1
 
 .PHONY: test
-test-local:
+test:
 	go test `go list ./... | grep -v '/mocks' | grep -v '/gen'` -cover -count=1 -coverprofile=coverage.txt -covermode=count
 
 .PHONY: docs
