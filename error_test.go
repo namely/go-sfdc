@@ -86,16 +86,30 @@ func (alwaysError) Read(p []byte) (int, error) {
 }
 
 func TestHandleError(t *testing.T) {
+	const (
+		singleErr       = "{\"message\":\"invalid record id\",\"errorCode\":\"INVALID_ID_FIELD\",\"fields\":[\"id\"]}"
+		singleErrBody   = "[" + singleErr + "]"
+		multipleErrBody = "[" + singleErr + "," + singleErr + "]"
+	)
+
 	tests := map[string]struct {
 		resp    *http.Response
 		wantErr string
 	}{
-		"400": {
+		"single_error": {
 			resp: &http.Response{
 				Status: "400 " + http.StatusText(400),
-				Body:   ioutil.NopCloser(strings.NewReader(`{"message":"invalid"}`)),
+				Body:   ioutil.NopCloser(strings.NewReader(singleErrBody)),
 			},
-			wantErr: `400 Bad Request: {"message":"invalid"}`,
+			wantErr: `400 Bad Request: ` + singleErrBody,
+		},
+		// TODO(vtopc): remove next case if SF API is never sending multiple errors:
+		"multiple_error": {
+			resp: &http.Response{
+				Status: "400 " + http.StatusText(400),
+				Body:   ioutil.NopCloser(strings.NewReader(multipleErrBody)),
+			},
+			wantErr: `400 Bad Request: ` + multipleErrBody,
 		},
 		"read_body_error": {
 			resp: &http.Response{
@@ -109,6 +123,7 @@ func TestHandleError(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			err := HandleError(tt.resp)
+			t.Log("err:", err)
 			require.EqualError(t, err, tt.wantErr)
 		})
 	}
